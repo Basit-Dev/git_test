@@ -1,18 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-
 class HomePage extends StatefulWidget {
   @override
   _HomePageState createState() => _HomePageState();
-}
-
-class Bulb {
-  //double total = kwh * 30;
-  // This is a ew dit
-  
-  
-
 }
 
 class _HomePageState extends State<HomePage> {
@@ -23,6 +14,8 @@ class _HomePageState extends State<HomePage> {
     myControllerStartRead = TextEditingController();
     myControllerEndRead = TextEditingController();
     myControllerSupplier = TextEditingController();
+    myControllerPeriod = TextEditingController(text: '0');
+    radioBtn = 1;
   }
 
   @override
@@ -32,6 +25,7 @@ class _HomePageState extends State<HomePage> {
     myControllerStartRead.dispose();
     myControllerEndRead.dispose();
     myControllerSupplier.dispose();
+    myControllerPeriod.dispose();
 
     super.dispose();
   }
@@ -88,66 +82,17 @@ class _HomePageState extends State<HomePage> {
     return formWidget;
   }
 
-  String selectedPeriod = 'Monthly';
-  //var selectedColor;
+  double selectedPeriod = 0;
 
-  List<DropdownMenuItem<String>> periodList = [];
+  int radioBtn;
 
-// Create the form values
-  void loadPeriodList() {
-    periodList = [];
-    periodList.add(new DropdownMenuItem(
-      child: new Text('Yearly'),
-      value: 'Yearly',
-    ));
-    periodList.add(new DropdownMenuItem(
-      child: new Text('Monthly'),
-      value: 'Monthly',
-    ));
-    periodList.add(new DropdownMenuItem(
-      child: new Text(
-        'Weekly',
-      ),
-      value: 'Weekly',
-    ));
-  }
-
-  // Create the form charateristics
-  List<Widget> getPeriodWidget() {
-    List<Widget> periodWidget = new List();
-
-    periodWidget.add(new DropdownButtonHideUnderline(
-      child: DropdownButton(
-        hint: new Text('Select Period'),
-        style: TextStyle(
-          color: Colors.black,
-        ),
-        items: periodList,
-        value: selectedPeriod,
-        onChanged: (value) {
-          setState(() {
-            selectedPeriod = value;
-            //selectedColor = Colors.black;
-          });
-        },
-        isExpanded: true,
-      ),
-    ));
-
-    return periodWidget;
-  }
-
-  bool electric = false;
-  bool gas = false;
-
-//void setState(Null Function() param0) {}
-
-  double padValue = 0;
+  //double padValue = 0;
 
   // Retrive text with getter
   var myControllerStartRead = TextEditingController();
   var myControllerEndRead = TextEditingController();
   var myControllerSupplier = TextEditingController();
+  var myControllerPeriod = TextEditingController();
 
   int startRead = 0;
   int endRead = 0;
@@ -155,20 +100,27 @@ class _HomePageState extends State<HomePage> {
   static int total = 0;
 
   static double electricKwh = 0.20;
-  double standingCharge = 0.26;
-  double electricCost = 0;
+  double eSCharge = 0.26;
 
-  electricUsed() {
+  double gasM3 = 0.18;
+  double gSCharge = 0.20;
 
-    if ( selectedPeriod == 'Monthly' && electric == true) {
-      return  (total * electricKwh )+ (standingCharge * 30);
-      
-    } else if (selectedPeriod == 'Weekly'){
-      return electricCost / 4;
+  double energyCost = 0;
+
+  energyUsedCalc() {
+    if (radioBtn == 1) {
+      return (total * electricKwh) + (eSCharge * selectedPeriod);
     } else {
-      return (total * electricKwh) * 12;
+      return (total * gasM3) + (gSCharge * selectedPeriod);
     }
-      
+  }
+
+  totalCalcFunction() {
+    if (radioBtn == 1) {
+      Text('Total $total kWH Used');
+    } else {
+      Text('Total $total M3 Used');
+    }
   }
 
   var _font = TextStyle(
@@ -176,12 +128,17 @@ class _HomePageState extends State<HomePage> {
     color: Colors.white,
   );
 
-//double totalRead = (startRead + endRead) as double;
-//int c = int.parse(startRead);
+  String cost = '';
+
+  setRadioBtn(int val) {
+    setState(() {
+      radioBtn = val;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     loadSupplierList();
-    loadPeriodList();
 
     return Scaffold(
       key: formKey,
@@ -336,76 +293,76 @@ class _HomePageState extends State<HomePage> {
                     data: Theme.of(context).copyWith(
                       canvasColor: Colors.grey[300],
                     ),
-                    child: Column(
-                      children: <Widget>[
-                        Form(
-                          child: Column(
-                            children: getPeriodWidget(),
+                    child: Container(
+                      child: Column(
+                        children: <Widget>[
+                          TextField(
+                            decoration:
+                                InputDecoration(border: InputBorder.none),
+                            style: TextStyle(
+                              decoration: TextDecoration.none,
+                            ),
+                            keyboardType: TextInputType.number,
+                            onChanged: (period) {
+                              setState(() {
+                                selectedPeriod = period as double;
+                                print('$selectedPeriod');
+                              });
+                            },
+                            controller: myControllerPeriod,
+                            inputFormatters: <TextInputFormatter>[
+                              WhitelistingTextInputFormatter.digitsOnly
+                            ],
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
               Container(
-                child: Theme(
-                  data: ThemeData(
-                    unselectedWidgetColor: Colors.white,
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(30, 0, 0, 0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: <Widget>[
-                        Expanded(
-                          child: CheckboxListTile(
-                            value: electric,
-                            onChanged: (bool value) {
-                              setState(() {
-                                electric = value;
-                              });
-                            },
-                            title: Padding(
-                              padding: const EdgeInsets.fromLTRB(45, 0, 0, 0),
-                              child: Text(
-                                'Electric',
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            ),
-                            //controlAffinity: ListTileControlAffinity.leading,
-                            //checkColor: Colors.orange,
-                            activeColor: Colors.purple,
-                          ),
-                        ),
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(0, 0, 70, 0),
-                            child: CheckboxListTile(
-                              value: gas,
-                              onChanged: (bool value) {
-                                setState(() {
-                                  gas = value;
-                                });
-                              },
-                              title: Padding(
-                                padding: const EdgeInsets.all(0),
-                                child: Text(
-                                  'Gas',
-                                  style: TextStyle(color: Colors.white),
-                                ),
-                              ),
-                              //controlAffinity: ListTileControlAffinity.leading,
-                              //checkColor: Colors.orange,
-                              activeColor: Colors.purple,
-                            ),
-                          ),
-                        )
-                      ],
-                    ),
-                  ),
+                  child: Theme(
+                data: ThemeData(
+                  unselectedWidgetColor: Colors.white,
                 ),
-              ),
+                child: Row(
+                  children: <Widget>[
+                    Container(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(100, 0, 0, 0),
+                        child: Text(
+                          'Electric',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                    Radio(
+                        value: 1,
+                        groupValue: radioBtn,
+                        activeColor: Colors.yellow[400],
+                        //focusColor: Colors.white,
+                        onChanged: (val) {
+                          setRadioBtn(val);
+                        }),
+                    Container(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(40, 0, 0, 0),
+                        child: Text(
+                          'Gas',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                    Radio(
+                        value: 2,
+                        groupValue: radioBtn,
+                        activeColor: Colors.yellow[400],
+                        onChanged: (val) {
+                          setRadioBtn(val);
+                        }),
+                  ],
+                ),
+              )),
               Padding(
                 padding: const EdgeInsets.fromLTRB(40, 30, 40, 40),
                 child: Column(
@@ -423,15 +380,11 @@ class _HomePageState extends State<HomePage> {
                           startRead = int.parse(myControllerStartRead.text);
                           endRead = int.parse(myControllerEndRead.text);
                           total = endRead - startRead;
-                          electricCost = electricUsed();
+                          selectedPeriod =
+                              double.parse(myControllerPeriod.text);
+                          energyCost = energyUsedCalc();
                           print('Total $total');
                           myControllerStartRead.text;
-                          //myControllerStartRead.clear();
-                          //myControllerEndRead.clear();
-                          //selectedSupplier = null;
-                          //selectedPeriod = null;
-                          //electric = false;
-                          //gas = false;
                         });
                       },
                       splashColor: Colors.purple,
@@ -447,38 +400,40 @@ class _HomePageState extends State<HomePage> {
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(40, 0, 40, 40),
-                child: Column(children: [
-                  //('start $start'),
-                  Text(
-                    'Start Read $start',
-                    style: _font,
-                  ),
-                  Text(
-                    'End Read $endRead',
-                    style: _font,
-                  ),
-                  Text(
-                    'Total $total kWH Used',
-                    style: _font,
-                  ),
-                ]),
+                child: Column(
+                  children: [
+                    //('start $start'),
+                    Text(
+                      'Start Read $start',
+                      style: _font,
+                    ),
+                    Text(
+                      'End Read $endRead',
+                      style: _font,
+                    ),
+
+                    Text(
+                      ' $total kWH Used',
+                      style: _font,
+                    ),
+                  ],
+                ),
               ),
               Container(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
                     Text(
-                      'You have selected the $selectedPeriod billing cycle',
+                      'You have selected the ${selectedPeriod.toStringAsFixed(2)} billing cycle',
                       style: _font,
                     ),
                     Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Text(
-                        'You have used £${electricCost.toStringAsFixed(2)} of Electric',
-                        
+                        'You have used £${energyCost.toStringAsFixed(2)} of Electric',
                         style: TextStyle(
-                          fontSize: 18.0,color: Colors.purple[900],
-                         
+                          fontSize: 18.0,
+                          color: Colors.purple[900],
                         ),
                       ),
                     )
